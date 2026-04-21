@@ -1,0 +1,105 @@
+# gene_expression_analyzer.py
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import os
+
+class GeneExpressionAnalyzer:
+    def __init__(self, file_path):
+        self.file_path = file_path
+        self.data = None
+
+    def load_data(self):
+        """Load dataset"""
+        try:
+            self.data = pd.read_csv(self.file_path)
+            print("✅ Data loaded successfully.\n")
+        except Exception as e:
+            print(f"❌ Error loading file: {e}")
+
+    def explore_data(self):
+        """Basic data inspection"""
+        print("🔍 First 5 rows:")
+        print(self.data.head(), "\n")
+
+        print("📊 Data Info:")
+        print(self.data.info(), "\n")
+
+        print("📈 Summary Statistics:")
+        print(self.data.describe(), "\n")
+
+    def clean_data(self):
+        """Handle missing values"""
+        print("🧹 Cleaning data...")
+
+        # Drop rows with too many missing values
+        self.data.dropna(thresh=len(self.data.columns) - 1, inplace=True)
+
+        # Fill remaining missing values with column mean
+        self.data.fillna(self.data.mean(numeric_only=True), inplace=True)
+
+        print("✅ Data cleaned.\n")
+
+    def get_top_genes(self, top_n=10):
+        """Identify top expressed genes"""
+        print(f"🔥 Top {top_n} highly expressed genes:")
+
+        # Assume first column is gene names
+        gene_column = self.data.columns[0]
+
+        # Compute mean expression across samples
+        self.data['Mean_Expression'] = self.data.iloc[:, 1:].mean(axis=1)
+
+        top_genes = self.data.sort_values(by='Mean_Expression', ascending=False).head(top_n)
+
+        print(top_genes[[gene_column, 'Mean_Expression']], "\n")
+
+        return top_genes
+
+    def plot_top_genes(self, top_genes):
+        """Plot top expressed genes"""
+        gene_column = top_genes.columns[0]
+
+        plt.figure()
+        plt.bar(top_genes[gene_column], top_genes['Mean_Expression'])
+        plt.xlabel("Genes")
+        plt.ylabel("Mean Expression")
+        plt.title("Top Expressed Genes")
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+
+        plt.savefig("top_genes.png")
+        plt.show()
+
+        print("📊 Plot saved as top_genes.png\n")
+
+    def save_results(self, top_genes):
+        """Save results to CSV"""
+        output_file = "top_genes.csv"
+        top_genes.to_csv(output_file, index=False)
+        print(f"💾 Results saved to {output_file}\n")
+
+
+def main():
+    print("🧬 Gene Expression Analyzer\n")
+
+    file_path = input("Enter path to your CSV dataset: ")
+
+    if not os.path.exists(file_path):
+        print("❌ File not found.")
+        return
+
+    analyzer = GeneExpressionAnalyzer(file_path)
+
+    analyzer.load_data()
+    analyzer.explore_data()
+    analyzer.clean_data()
+
+    top_genes = analyzer.get_top_genes(top_n=10)
+
+    analyzer.plot_top_genes(top_genes)
+    analyzer.save_results(top_genes)
+
+
+if __name__ == "__main__":
+    main()
